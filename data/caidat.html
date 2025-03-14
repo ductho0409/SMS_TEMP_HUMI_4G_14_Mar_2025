@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.16.0/jquery.validate.min.js"></script>
+  <script src="main.js"></script>
+  <title>Cấu hình thiết bị</title>
+</head>
+
+<body>
+  <div class="container">
+    <h1 style="text-align: center;">Cài đặt thông tin thiết bị</h1>
+    <form method="post" action="/settings">
+
+      Chế độ thiết bị
+      <select name="device_mode" id="device_mode_id">
+        <option value="SMS_ONLY">nhắn tin</option>
+        <option value="WIFI_ONLY">Lưu trữ qua wifi</option>
+        <option value="SMS_WIFI">nhắn tin và lưu trữ qua wifi</option>
+        <option value="SMS_4G">nhắn tin và lưu trữ qua 4g</option>
+      </select><br>
+
+
+      Tên thiết bị <input name="device_name" type="text" size="32" data-type="text">
+      ID thiết bị (idx) <input name="device_idx" type="text" size="30" data-type="text">
+
+
+      <div class="container"></div>
+      <h1 style="text-align: center;">Cài đặt module 4G</h1>
+
+
+      <label>Lựa chọn mạng</label>
+      <select name="selector" id="selector_id">
+        <option value="v-internet">Viettel</option>
+        <option value="m3-world">Vinaphone</option>
+        <option value="m-wap">Mobifone</option>
+      </select><br>
+
+      <script>
+        $('#selector_id').on('change', function () {
+
+          if (document.getElementById("selector_id").value == 'v-internet') {
+            $('#user_id').val('');
+            $('#pwd_id').val('');
+            $('#apn_id').val('v-internet');
+          }
+
+          if (document.getElementById("selector_id").value == 'm3-world') {
+            $('#user_id').val('mms');
+            $('#pwd_id').val('mms');
+            $('#apn_id').val('m3-world');
+          }
+          if (document.getElementById("selector_id").value == 'm-wap') {
+            $('#user_id').val('mms');
+            $('#pwd_id').val('mms');
+            $('#apn_id').val('m-wap');
+          }
+
+        })
+
+        // init
+        $('#selector_id').change();
+      </script>
+
+      <label>APN </label>
+      <input name="apn" id="apn_id" type="text" size="20" data-type="text">
+
+      <div class="field-group">
+        <label>Tên đăng nhập </label>
+        <input name="user" id="user_id" type="text" size="20" data-type="text">
+      </div>
+
+      <div class="field-group">
+        <label>Mật khẩu</label>
+        <input name="pwd" id="pwd_id" type="text" size="20" data-type="text">
+      </div>
+
+      <h1 style="text-align: center; color: blue;">Cài đặt WIFI thứ 2</h1>
+      <div class="field-group">
+          <label style="color: blue;">Tên Wifi thứ 2</label>
+          <input name="second_wifi_name" type="text" size="100" data-type="text" style="color: blue;">
+      </div>
+      
+      <div class="field-group">
+          <label style="color: blue;">Mật khẩu wifi thứ 2</label>
+          <input name="second_wifi_pass" type="text" size="20" data-type="text" style="color: blue;">
+      </div>
+
+      <h1 style="text-align: center;">Cài đặt MQTT</h1>
+      <div class="field-group">
+        <label>MQTT server</label>
+        <input name="broker" type="text" size="32" data-type="text">
+      </div>
+
+      <div class="field-group">
+        <label>MQTT username</label>
+        <input name="mqttUser" type="text" size="20" data-type="text">
+      </div>
+
+      <div class="field-group">
+        <label>MQTT Password</label>
+        <input name="mqttPass" type="text" size="20" data-type="text">
+      </div>
+
+      <div class="field-group">
+        <label>domoticz/in</label>
+        <input name="SERVER_TOPIC_RECEIVE_DATA" type="text" size="32" data-type="text">
+      </div>
+
+      <div class="field-group">
+        <label>MQTT port</label>
+        <input name="brokerPort" type="text" size="10" data-type="number">
+      </div>
+
+      <div class="field-group">
+        <label>Thời gian cập nhập (giây)</label>
+        <input name="MQTT_update_interval" type="text" size="10" data-type="number">
+      </div>
+
+
+      <h1 style="text-align: center;">Cài đặt nhiệt độ cảnh báo</h1>
+      <div class="field-group">
+        <label>Nhiệt độ cao (C)</label>
+        <input name="HIGH_TEMP" type="text" step='0.1' value='0.0' placeholder='0.0' size="5" data-type="number">
+      </div>
+      <div class="field-group">
+        <label>Nhiệt độ thấp (C)</label>
+        <input name="LOW_TEMP" type="text" step='0.1' value='0.0' placeholder='0.0' size="5" data-type="number">
+      </div>
+
+      <div class="field-group">
+        <label>Hiệu chỉnh nhiệt độ</label>
+        <input name="tempBias" type="text" step='0.1' value='0.0' placeholder='0.0' size="5" data-type="number">
+      </div>
+
+      <div class="field-group">
+        <label>Thời gian cho gửi tin nhắn (giây)</label>
+        <input name="smsWaitingToSend" type="text" size="10" data-type="number">
+      </div>
+
+      <div class="field-group">
+        <label>Thời gian lặp lại tin nhắn (giây)</label>
+        <input name="smsWaitingToRepeat" type="text" size="10" data-type="number">
+      </div>
+
+      <div class="field-group">
+        <label>Số tin n hắn tối đa (lần)</label>
+        <input name="maximumOfSendingSMS" type="text" size="10" data-type="number">
+      </div>
+
+      <h1 style="text-align: center;">Cài đặt cảnh báo mất điện</h1>
+      <div class="field-group">
+  
+         Cho phép cảnh báo mất điện <input name="powerLostWarningEnable" type="checkbox" data-type="boolean"><br>
+         Cho phép khôi phục <input name="powerRecoverEnable" type="checkbox" data-type="boolean">
+         <label>Thời gian cảnh báo mất điện (Giây)</label>
+        <input name="waitingTimetoSendPowerLost" type="text" size="10" data-type="number">
+      </div>
+
+      <h1 style="text-align: center;">Cài đặt cảnh báo hỏng cảm biến</h1>
+      <div class="field-group">
+  
+         Cho phép cảnh báo hỏng cản biến <input name="sensorErrorWarningEnable" type="checkbox" data-type="boolean"><br>
+         <label>Thời gian cho phép cảnh báo hỏng cảm biến (Giây)</label>
+        <input name="waitingTimetoSendSensorError" type="text" size="10" data-type="number">
+      </div>
+
+<!-- 
+      <h1 style="text-align: center;">Cai dat canh bao khac</h1>
+      <input name="powerLostEnable" type="checkbox" data-type="boolean">Canh bao mat dien<br>
+      Thoi gian cho canh bao
+      <input name="powerWaitingToSend" type="text" size="10" data-type="number">
+      Thoi gian lap lai canh bao
+      <input name="powerWaitingToRepeat" type="text" size="10" data-type="number">
+      So lan canh bao toi da
+      <input name="maximumOfSendingpower" type="text" size="10" data-type="number">
+
+      <input name="relayEnable" type="checkbox" data-type="boolean">
+      Cho phep dau ra phan cung(relay)<br>
+      <input name="doorSensorEnable" type="checkbox" data-type="boolean">
+      Cho phep cam bien cua (door sensor)<br>
+-->
+
+      <h1 style="text-align: center;">Cài đặt số điện thoại</h1>
+
+      <div class="field-group">
+        <label>Số 1</label>
+        <input name="no1" type="text" size="15" data-type="text">
+        <input name="e_s_no1" type="checkbox" data-type="boolean">SMS
+        <input name="e_c_no1" type="checkbox" data-type="boolean">Call
+      </div>
+
+      <div class="field-group">
+        <label>Số 2</label>
+        <input name="no2" type="text" size="15" data-type="text">
+        <input name="e_s_no2" type="checkbox" data-type="boolean">SMS <input name="e_c_no2" type="checkbox"
+          data-type="boolean">Call
+      </div>
+
+      <div class="field-group">
+        <label>Số 3</label>
+        <input name="no3" type="text" size="15" data-type="text">
+        <input name="e_s_no3" type="checkbox" data-type="boolean">SMS <input name="e_c_no3" type="checkbox"
+          data-type="boolean">Call
+      </div>
+
+      <div class="field-group">
+        <label>Số 4</label>
+        <input name="no4" type="text" size="15" data-type="text">
+        <input name="e_s_no4" type="checkbox" data-type="boolean">SMS <input name="e_c_no4" type="checkbox"
+          data-type="boolean">Call
+      </div>
+
+      <div class="field-group">
+        <label>Sô 5</label>
+        <input name="no5" type="text" size="15" data-type="text">
+        <input name="e_s_no5" type="checkbox" data-type="boolean">SMS <input name="e_c_no5" type="checkbox"
+          data-type="boolean">Call
+      </div>
+
+      <div class="field-group">
+        <label>Số 6</label>
+        <input name="no6" type="text" size="15" data-type="text">
+        <input name="e_s_no6" type="checkbox" data-type="boolean">SMS <input name="e_c_no6" type="checkbox"
+          data-type="boolean">Call
+      </div>
+
+      <div class="field-group">
+        <label>Số 7</label>
+        <input name="no7" type="text" size="15" data-type="text">
+        <input name="e_s_no7" type="checkbox" data-type="boolean">SMS <input name="e_c_no7" type="checkbox"
+          data-type="boolean">Call
+      </div>
+
+      <div class="field-group">
+        <label>Số 8</label>
+        <input name="no8" type="text" size="15" data-type="text">
+        <input name="e_s_no8" type="checkbox" data-type="boolean">SMS <input name="e_c_no8" type="checkbox"
+          data-type="boolean">Call
+      </div>
+
+      <div class="field-group">
+        <label>Số 9</label>
+        <input name="no9" type="text" size="15" data-type="text">
+        <input name="e_s_no9" type="checkbox" data-type="boolean">SMS <input name="e_c_no9" type="checkbox"
+          data-type="boolean">Call
+      </div>
+
+      <div class="field-group">
+        <label>Số 10</label>
+        <input name="no10" type="text" size="15" data-type="text">
+        <input name="e_s_no10" type="checkbox" data-type="boolean">SMS <input name="e_c_no10" type="checkbox"
+          data-type="boolean">Call
+      </div>
+
+      <h1 style="text-align: center;">Cài đặt cảnh báo hàng ngày</h1>
+      <div class="field-group">
+        Cho phép cảnh báo hàng ngày<input name="dailySMSEnable" type="checkbox" data-type="boolean"> 
+        <label>Số cảnh báo hàng ngày (report Number)</label>
+        <input name="reportNumber" type="text" size="60" data-type="text">
+      </div>
+
+      <div class="field-group">
+        <label>Giờ nhắn tin (24h)</label>
+        <input name="reportClock" type="text" size="10" data-type="number">
+      </div>
+
+
+      <h1 style="text-align: center;">Cài đặt relay đầu ra</h1>
+      <div class="field-group">
+        <br>Cho phép đầu ra relay<input name="relayOutputEnable" type="checkbox" data-type="boolean"> 
+       
+      </div>
+
+<br>
+
+      <div class="button-container">
+        <h2 id="status"></h2>
+        <button type="submit">Lưu</button>
+      </div>
+    </form>
+  </div>
+</body>
+
+</html>
