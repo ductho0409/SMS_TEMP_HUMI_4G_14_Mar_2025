@@ -1,4 +1,4 @@
-//Thay đổi thử nghiệm githu
+// Thay đổi thử nghiệm githu
 #include <lib.h>
 bool mqttLogUpdate(String idx = logIdx, String content = "");
 bool checkATSimNet();
@@ -29,6 +29,7 @@ void AlarmNew(const char *tinNhan)
   SIMOFF();
   WiFi.begin();
 }
+
 String getTimeFromSimModule()
 {
 
@@ -57,6 +58,7 @@ void setTimeFromModem()
 {
   if (testEsp32)
     return;
+
   SerialMon.println("Đặt giờ từ modem GSM vào ESP32");
   String gsmTime = getTimeFromSimModule();
   if (gsmTime != "")
@@ -196,13 +198,13 @@ void sendLogOverMQTT(String path, String topicRecv, bool js, bool isOfflineLog)
                   errorIdx.c_str(), config.device_idx, config.device_name, line.c_str());
         }
 
-        mqttWifi.publish(topicRecv.c_str(), ms);
+        mqtt->publish(topicRecv.c_str(), ms);
         Serial.println(".");
       }
       else
       {
         //"offlineLogTopic"
-        if (!mqttWifi.publish(topicRecv.c_str(), line.c_str()))
+        if (!mqtt->publish(topicRecv.c_str(), line.c_str()))
         {
           Serial.println("Failed to publish message to MQTT Broker");
           addToLog("Failed to publish message to MQTT Broker");
@@ -351,7 +353,7 @@ bool mqttLogUpdate(String idx, String content)
   sprintf(ms, "{\"idx\":%s, \"svalue\":\"(%s) (%s) [%s]:\r\n %s\"}", idx.c_str(), config.device_idx, config.device_name,
           timeString().c_str(), content.c_str());
   sprintf(tp, "domoticz/in");
-  if (mqttWifi.publish(tp, ms))
+  if (mqtt->publish(tp, ms))
     return true;
   else
     return false;
@@ -453,6 +455,7 @@ void timeavailable(struct timeval *t)
   setSim800lTimeFlag = true;
   timeIsSet = true;
 }
+
 bool dailyReportSMS(String smsNumberString)
 {
   SerialMon.println("");
@@ -641,7 +644,7 @@ void mqttSendConfig()
   {
     char tp[100];
     sprintf(tp, "domoticz/parameter/%d", IdxArray[i]);
-    mqttWifi.publish(tp, jsonString.c_str());
+    mqtt->publish(tp, jsonString.c_str());
     delayWithWatchdog(100);
   }
 }
@@ -760,8 +763,14 @@ void mqttCallback(char *topic, byte *payload, unsigned int len)
     }
     if (s.indexOf("UPDATE") >= 0)
     {
+      if (!wifi_using)
+      {
+        SerialMon.println("Huỷ bỏ cập nhật do đang kết nối 4G");
+        oledInforDisplay("Cap nhat phan mem", "update(4G) cancelled)", "setcom.com.vn", 1000);
+        return;
+      }
       downloadAllDataFile(true);
-      mqttWifi.disconnect();
+      mqtt->disconnect();
       SerialMon.println("Cap nhat");
       oledInforDisplay("Cap nhat phan mem", "update", "setcom.com.vn", 1000);
       unsigned long now100 = millis();
@@ -825,7 +834,7 @@ void mqttCallback(char *topic, byte *payload, unsigned int len)
         {
           char tp[100];
           sprintf(tp, "readconfig/%d", IdxArray[i]);
-          mqttWifi.unsubscribe(tp);
+          mqtt->unsubscribe(tp);
         }
         strcpy(config.device_idx, sub);
         fillArrayFromString_INT(IdxArray, sub, 30);
@@ -835,7 +844,7 @@ void mqttCallback(char *topic, byte *payload, unsigned int len)
         {
           char tp[100];
           sprintf(tp, "readconfig/%d", IdxArray[i]);
-          mqttWifi.subscribe(tp);
+          mqtt->subscribe(tp);
         }
         if (SL_CAM_BIEN != SL_CAM_BIEN_phu)
         {
@@ -987,16 +996,22 @@ void mqttCallback(char *topic, byte *payload, unsigned int len)
 }
 void mqttSetupParameter()
 {
-  SerialMon.print("(Wifi)MQTT Broker setup...");
-  mqttWifi.setBufferSize(4096);
-  mqttWifi.setKeepAlive(40);
-  mqttWifi.setSocketTimeout(40);
-  mqttWifi.setServer(config.broker, config.brokerPort);
-  mqttWifi.setCallback(mqttCallback);
+
+  SerialMon.print("MQTT Broker setup...");
+  mqtt->setBufferSize(4096);
+  mqtt->setKeepAlive(40);
+  mqtt->setSocketTimeout(40);
+  mqtt->setServer(config.broker, config.brokerPort);
+  mqtt->setCallback(mqttCallback);
   SerialMon.println(" OK");
 }
 boolean mqttConnect()
 {
+  if (!wifi_using)
+  {
+    GPRSconnect();
+  }
+
   SerialMon.print("Connecting to ");
   SerialMon.print(config.broker);
   // String willTopic = String("domoticz/st/") + config.device_idx;
@@ -1006,7 +1021,7 @@ boolean mqttConnect()
   // Serial.print("\tMAC: ");
   // Serial.println(strBuff);
 
-  boolean status = mqttWifi.connect(strBuff.c_str(), config.mqttUser, config.mqttPass); //, willTopic.c_str(), willQoS, willRetain, willMessage);
+  boolean status = mqtt->connect(strBuff.c_str(), config.mqttUser, config.mqttPass); //, willTopic.c_str(), willQoS, willRetain, willMessage);
 
   if (status == false)
   {
@@ -1021,10 +1036,11 @@ boolean mqttConnect()
   {
     char tp[100];
     sprintf(tp, "readconfig/%d", IdxArray[i]);
-    mqttWifi.subscribe(tp);
+    mqtt->subscribe(tp);
   }
+  
   sbuf = "readconfig";
-  mqttWifi.subscribe(sbuf.c_str());
+  mqtt->subscribe(sbuf.c_str());
 
   mqttSendConfig();
   if (!sendBootReasonStatus)
@@ -1034,7 +1050,7 @@ boolean mqttConnect()
   }
   sendLogOverMQTT(OfflineLogfilePath, "domoticz/in", true, true);
   sendLogOverMQTT(ErrorFilePath, "domoticz/in", true, false);
-  return mqttWifi.connected();
+  return mqtt->connected();
 }
 bool callAlarm(const char *number)
 {
@@ -1404,7 +1420,7 @@ beginning:
       nowOfflineLog = millis();
 
       // Check to settime from Modem
-      if (++numberOfStartToGetTimeFromModem > 2 && !getLocalTime(&timeinfo))
+      if (++numberOfStartToGetTimeFromModem >= 2 && !getLocalTime(&timeinfo))
       {
         if (!m1)
         {
@@ -1413,7 +1429,7 @@ beginning:
         }
       }
       // ghi dữ liệu offline
-      if (!mqttWifi.connected() || WiFi.status() != WL_CONNECTED)
+      if (!mqtt->connected() || WiFi.status() != WL_CONNECTED)
       {
 
         if (numberOfStartToLog++ > 30)
@@ -1567,7 +1583,7 @@ beginning:
       if (checkDeviceMode("SMS_WIFI") || checkDeviceMode("WIFI_ONLY"))
       {
 
-        if (mqttWifi.connected())
+        if (mqtt->connected())
         {
 
           oledTempDisplay(String("(M) ") + String((digitalRead(powerDetectPin) ? " IDX:" : "(+) IDX:") + String(config.device_idx)),
@@ -1791,9 +1807,9 @@ beginning:
     {
       if ((checkDeviceMode("SMS_WIFI") || checkDeviceMode("WIFI_ONLY")))
       {
-        mqttWifi.loop();
-        //-- Check wifi connected
-        if (millis() - now9 > timeToCheckWifi)
+        mqtt->loop();
+        //-- kiểm tra có kết nối wifi không, với trường hợp dùng wifi
+        if (millis() - now9 > timeToCheckWifi && wifi_using)
         {
           now9 = millis();
           //-- Check wifi connected
@@ -1842,13 +1858,13 @@ beginning:
         if (millis() - now2 > timeToCheckMQTTConnected)
         {
           now2 = millis();
-          if (WiFi.status() != WL_CONNECTED)
+          if (WiFi.status() != WL_CONNECTED && wifi_using)
           {
             SerialMon.println("------Mất kết nối WiFi");
             goto loopAgain;
           }
 
-          if (!mqttWifi.connected())
+          if (!mqtt->connected())
           {
             SerialMon.println("------Mất kết nối MQTT");
             oledInforDisplay("status", "MQTT.." + String(mqttConnect() ? "OK" : "fail"), "", 500);
@@ -1877,7 +1893,7 @@ beginning:
           }
 
           now1 = millis();
-          if (mqttWifi.connected())
+          if (mqtt->connected())
           {
             if (config.sendConfigMqtt)
             {
@@ -1922,7 +1938,7 @@ beginning:
                 i++; // Chỉ tăng i khi xử lý cảm biến thông thường
               }
 
-              if (mqttWifi.publish(config.SERVER_TOPIC_RECEIVE_DATA, message))
+              if (mqtt->publish(config.SERVER_TOPIC_RECEIVE_DATA, message))
               {
                 SerialMon.print("->OK  ");
               }
@@ -1951,6 +1967,8 @@ beginning:
 }
 void setup()
 {
+  // Chọn MQTT Client dựa trên wifi_using
+  mqtt = wifi_using ? &mqttWifi : &mqtt4G;
 
   SerialAT.begin(AT_BAUDRATE);
   SerialMon.begin(115200);
@@ -1984,6 +2002,7 @@ void setup()
   esp_task_wdt_init(300, true); // enable panic so ESP32 restarts
   esp_task_wdt_add(NULL);       // add current thread to WDT watch
   SerialMon.println("OK");
+
   // Clock
   sntp_set_time_sync_notification_cb(timeavailable);
   sntp_servermode_dhcp(1);
@@ -2023,8 +2042,6 @@ void setup()
   oledSetup();
   paraSetup();
 
-  // smsAlarm("191", "HDCALL");
-
   // SerialMon.println(readAndPrintSms(10));
 
   strncpy(config.broker, "theodoi.setcom.com.vn", 30);
@@ -2041,15 +2058,6 @@ void setup()
 
   //******************************
   // WiFi.mode(WIFI_STA);
-
-  // while (true)
-  // { 
-  //   const char *targetSSID = "SETCOM"; // Đặt tên mạng WiFi bạn muốn tìm
-  //   int signalStrength = getSignalStrengthPercentage(targetSSID);
-  //   oledInforDisplay(String(millis()/1000), String(signalStrength), "", 1000);
-  //   SerialMon.println(signalStrength);
-  //   delay(1000); // Chờ 5 giây trước khi quét lại
-  // }
 
   //******************************
 
@@ -2128,7 +2136,7 @@ void setup()
   tachChuoiCon(config.donVi_hienThi_config, donVi_hienThi);
 
   // Kết nối đến wifi chính phụ
-  if (!connectToWiFi(config.mainWifi))
+  if (wifi_using && !connectToWiFi(config.mainWifi) )
   {
     delay(1000);
     config.mainWifi = !config.mainWifi;
@@ -2242,14 +2250,23 @@ void setup()
   oledInforDisplay("Menu cai dat", ">>UPDATE...", "", 0);
   if (checkKeyPressed(1000))
   {
-    long long now100 = millis();
-    downloadAllDataFile(true);
-    while (true)
+    if (!wifi_using)
     {
-      esp_task_wdt_reset();
-      httpUpdateFirmware();
-      if (millis() - now100 > 600000L)
-        break;
+      SerialMon.println("Huỷ bỏ cập nhật do đang kết nối 4G");
+      oledInforDisplay("Cap nhat phan mem", "update(4G) cancelled)", "setcom.com.vn", 1000);
+      return;
+    }
+    else
+    {
+      long long now100 = millis();
+      downloadAllDataFile(true);
+      while (true)
+      {
+        esp_task_wdt_reset();
+        httpUpdateFirmware();
+        if (millis() - now100 > 600000L)
+          break;
+      }
     }
   }
 

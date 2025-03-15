@@ -24,11 +24,13 @@
 #include <math.h>
 #include <ArtronShop_SHT3x.h>
 #include "esp_wifi.h"
+#include <NTPClient.h>
+#include <HTTPClient.h>
 
 ArtronShop_SHT3x sht3x(0x44, &Wire);
 SSD1306Wire display(0x3c, SDA, SCL);
 #define BASE_URL "http://theodoi.setcom.com.vn/"
-#define PROJECT_NAME "SMS_TEMP_HUMI_10_Feb_2024"
+#define PROJECT_NAME "SMS_TEMP_HUMI_4G_14_Mar_2025"
 const char *sUpdateFirmware = BASE_URL PROJECT_NAME "/firmware.bin";
 
 const char *url_caidat_html = BASE_URL PROJECT_NAME "/caidat.html";
@@ -102,8 +104,8 @@ char **soNhanTinArray;
 char **soNhanTinHangNgayArray;
 char **donVi_hienThi;
 
-#define DUMP_AT_COMMANDS
-//    #define DEBUG 1
+// #define DUMP_AT_COMMANDS
+//     #define DEBUG 1
 
 #ifdef DUMP_AT_COMMANDS
 #include <StreamDebugger.h>
@@ -113,10 +115,19 @@ TinyGsm modem(debugger);
 TinyGsm modem(SerialAT);
 #endif
 
-TinyGsmClient client(modem);
+// Khai báo TinyGSMClient cho 4G
+TinyGsmClient gsmClient(modem);
+PubSubClient mqtt4G(gsmClient);
 
+// Khai báo WiFiClient cho WiFi
 WiFiClient wifiClient;
 PubSubClient mqttWifi(wifiClient);
+
+// Con trỏ MQTT dùng chung cho cả WiFi và 4G
+PubSubClient *mqtt;
+
+// Biến để lựa chọn dùng MQTT nào 4G hay wifi: False là 4G; True là wifi
+bool wifi_using = false;
 
 byte willQoS = 1;
 const char *willMessage = "0";
@@ -135,7 +146,7 @@ int relayOutputPin;
 int enable_button = 0;
 int led = 0;
 int switch_record = 0;
-// #define enable_button_v3 2
+
 ESP32Time espTime;
 
 #define boot_pin 0
@@ -631,7 +642,7 @@ String Mqtt_scanWifiAndCreateJson()
     // Gửi chuỗi JSON tới topic duy nhất
     char tp[100];
     sprintf(tp, "domoticz/parameter/%d", IdxArray[i]);
-    mqttWifi.publish(tp, wifiListJson.c_str());
+    mqtt->publish(tp, wifiListJson.c_str());
   }
 
   return wifiListJson;
@@ -914,7 +925,7 @@ void mqttSendBootReason()
   sprintf(ms, "{\"idx\":%s, \"svalue\":\"(%s) (%s) [%s]: %s\"}", logIdx.c_str(), config.device_idx, config.device_name,
           timeString, getRestartReason().c_str());
   sprintf(tp, "domoticz/in");
-  mqttWifi.publish(tp, ms);
+  mqtt->publish(tp, ms);
 }
 
 void fillArrayFromString(float arr[], String numbers, float defaultValue)
@@ -1299,7 +1310,7 @@ String readAndPrintSms(int totalMessages)
     // Gửi chuỗi JSON tới topic duy nhất
     char tp[100];
     sprintf(tp, "domoticz/parameter/%d", IdxArray[i]);
-    mqttWifi.publish(tp, result.c_str());
+    mqtt->publish(tp, result.c_str());
   }
 
   return result;
@@ -1319,19 +1330,40 @@ String generateRandomString()
   return randomString;
 }
 
-int getSignalStrengthPercentage(const char* ssid) {
+int getSignalStrengthPercentage(const char *ssid)
+{
 
-    int n = WiFi.scanNetworks();
+  int n = WiFi.scanNetworks();
 
-    for (int i = 0; i < n; ++i) {
-        if (WiFi.SSID(i) == ssid) {
-            int rssi = WiFi.RSSI(i);
-            // Tính toán phần trăm cường độ tín hiệu trực tiếp trong hàm
-            int quality = (rssi + 100) * 2;
-            if (quality < 0) quality = 0;
-            if (quality > 100) quality = 100;
-            return quality;
-        }
+  for (int i = 0; i < n; ++i)
+  {
+    if (WiFi.SSID(i) == ssid)
+    {
+      int rssi = WiFi.RSSI(i);
+      // Tính toán phần trăm cường độ tín hiệu trực tiếp trong hàm
+      int quality = (rssi + 100) * 2;
+      if (quality < 0)
+        quality = 0;
+      if (quality > 100)
+        quality = 100;
+      return quality;
     }
-    return -1; // Trả về -1 nếu không tìm thấy mạng WiFi
+  }
+  return -1; // Trả về -1 nếu không tìm thấy mạng WiFi
 }
+void GPRSconnect()
+{
+  // Test kết nối mqtt4G
+  checkATSimNet();
+  const char apn[] = "v-internet";
+  const char user[] = "";
+  const char pass[] = "";
+  SerialMon.print("Connecting to ");
+  SerialMon.print(apn);
+  if (!modem.gprsConnect(apn, user, pass))
+  {
+    Serial.println("Không thể kết nối GPRS");
+  }
+  SerialMon.println(" OK");
+}
+
