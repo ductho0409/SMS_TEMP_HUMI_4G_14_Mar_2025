@@ -988,76 +988,7 @@ void WifiBluetoothOn()
   btStart();
   WiFi.begin();
 }
-// bool checkATSimNet()
-// {
 
-//   SIMON();
-//   int i = 0;
-
-//   if (!testEsp32)
-//   {
-//     //--------------------------
-//     SerialMon.print("Test AT...");
-//     oledInforDisplay("Module SIM check...", "Test AT ..", "", 500);
-//     if (!modem.testAT())
-//     {
-//       oledInforDisplay("Module SIM check...", "Test AT..fail", "", 500);
-//       addToLog("Test AT..fail");
-//       SerialMon.println("NG");
-//       SIMOFF();
-//       return false;
-//     }
-//     SerialMon.println("OK");
-//     oledInforDisplay("Module SIM check...", "Test AT..OK", "", 500);
-
-//     //--------------------------
-
-//     SerialMon.print("Checking SIM present...");
-//     oledInforDisplay("Module SIM check...", "Check SIM ..", "", 500);
-//     i = 0;
-//     while (!modem.getSimStatus())
-//     {
-//       oledInforDisplay("Module SIM check...", "Check SIM ..fail", "", 500);
-//       addToLog("Kiểm tra lắp SIM chưa..NG");
-//       if (++i >= 2)
-//       {
-//         SIMOFF();
-//         return false;
-//       }
-//     }
-
-//     SerialMon.println("OK");
-//     oledInforDisplay("Module SIM check...", "Check SIM .. OK", "", 500);
-//     //--------------------------
-
-//     SerialMon.print("Waiting for network...");
-//     oledInforDisplay("Module SIM check...", "Check NET ..", "", 500);
-//   }
-
-//   i = 0;
-//   while (!modem.waitForNetwork())
-//   {
-//     esp_task_wdt_reset();
-//     //   SerialMon.println(".");
-//     // oledInforDisplay("Menu cai dat", ">>S:" + String(modem.getRegistrationStatus()), String(i), 2000);
-//     if (++i > 2)
-//     {
-//       oledInforDisplay("Module SIM check...", "Check NET ..fail", "", 500);
-//       addToLog("Check NET..fail");
-//       SIMOFF();
-//       return false;
-//     }
-//   }
-
-//   SerialMon.println(" OK");
-//   oledInforDisplay("Module SIM check...", "Check NET ..OK", "", 500);
-
-//   String StringBuffer = String(map(modem.getSignalQuality(), 2, 30, 5, 100));
-//   oledInforDisplay("SIGNAL", StringBuffer + "%", "", 1000);
-//   addToLog("Cường độ sóng di động GSM: " + StringBuffer + "%");
-
-//   return true;
-// }
 
 bool checkATSimNet()
 {
@@ -1086,7 +1017,7 @@ bool checkATSimNet()
 
     //--------------------------
 
-    SerialMon.print("Checking SIM present...");
+    SerialMon.print("Check SIM ..");
     oledInforDisplay("Module SIM check...", "Check SIM ..", "", 500);
     i = 0;
     while (!modem.getSimStatus())
@@ -1104,32 +1035,8 @@ bool checkATSimNet()
     oledInforDisplay("Module SIM check...", "Check SIM .. OK", "", 500);
     //--------------------------
 
-    //--------------Get SMS ready------------
-    // if (!config.volteStatus)
-    // {
-    //   SerialMon.print("Get SMS Ready..");
-    //   oledInforDisplay("Get SMS Ready...", "SMS ready ..", "", 500);
 
-    //   modem.sendAT(GF(""));
-    //   int8_t status = modem.waitResponse(60000L, GF("SMS Ready"));
-    //   SerialMon.println(status);
-
-    //   if (status == 1)
-    //   {
-    //     SerialMon.println("OK");
-    //     oledInforDisplay("Get SMS Ready...", "SMS ready ..OK", "", 500);
-    //   }
-    //   else
-    //   {
-    //     oledInforDisplay("Get SMS Ready...", "SMS ready ..fail", "", 500);
-    //     addToLog("SMS ready ..fail");
-    //     SIMOFF();
-    //     return false;
-    //   }
-    // }
-    //--------------------------
-
-    SerialMon.print("Waiting for network...");
+    SerialMon.print("Check NET ..");
     oledInforDisplay("Module SIM check...", "Check NET ..", "", 500);
   }
 
@@ -1358,8 +1265,9 @@ void GPRSconnect()
   const char apn[] = "v-internet";
   const char user[] = "";
   const char pass[] = "";
-  SerialMon.print("Connecting to ");
+  SerialMon.print("GPRS: connecting to ");
   SerialMon.print(apn);
+  SerialMon.print("...");
   if (!modem.gprsConnect(apn, user, pass))
   {
     Serial.println("Không thể kết nối GPRS");
